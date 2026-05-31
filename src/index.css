@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply antialiased text-slate-900 bg-slate-200;
+  }
+}
+
+.leaflet-container {
+  background-color: #0f172a !important; /* slate-900 */
+}
