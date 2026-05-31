@@ -2,7 +2,6 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { ReefFeature, ReefList } from '../types/reef';
 
-const STORAGE_KEY_LISTS = 'reefLists';
 const STORAGE_KEY_LEGACY = 'savedReefs';
 
 interface SavedReefsContextType {
