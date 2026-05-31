@@ -10,6 +10,7 @@ import { AddToListsModal } from './components/UI/AddToListsModal';
 import { Upload, Search, Filter, Map as MapIcon, Info, Menu, X, Heart, List, ChevronDown, Trash2, Plus, Edit2, Download, Check, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ReefFeature } from './types/reef';
+import { exportToGPX, exportToKML, exportToCSV, downloadFile } from './utils/files';
 
 function App() {
   const { reefs, allReefs, loading, error, filters, handleFileUpload, totalReefs } = useReefs();
@@ -20,12 +21,22 @@ function App() {
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [reefsToManage, setReefsToManage] = useState<ReefFeature[]>([]);
   const [view, setView] = useState<'explore' | 'saved'>('explore');
+  const [exportFormat, setExportFormat] = useState<'gpx' | 'kml' | 'csv'>('gpx');
 
   // State for navigating to a specific reef
   const [selectedReef, setSelectedReef] = useState<ReefFeature | null>(null);
 
   // States for map layers controls
   const [baseMap, setBaseMap] = useState<'dark' | 'topo' | 'voyager'>('dark');
+
+  const handleExport = (listId: string, listName: string) => {
+    const reefs = getSavedReefsInList(listId, allReefs);
+    if (reefs.length === 0) return;
+
+    if (exportFormat === 'gpx') downloadFile(exportToGPX(reefs), `${listName}.gpx`, 'application/gpx+xml');
+    if (exportFormat === 'kml') downloadFile(exportToKML(reefs), `${listName}.kml`, 'application/vnd.google-earth.kml+xml');
+    if (exportFormat === 'csv') downloadFile(exportToCSV(reefs), `${listName}.csv`, 'text/csv');
+  };
 
   // Derive consolidated saved IDs for the map (show heart for any saved reef)
   const savedReefIds = useMemo(() => {
@@ -254,9 +265,9 @@ function App() {
                     <button
                       onClick={() => setReefsToManage(reefs)}
                       disabled={reefs.length === 0}
-                      className="w-full py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold text-xs uppercase tracking-wide rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 font-bold text-xs uppercase tracking-wide rounded-lg border border-cyan-500/60 hover:border-cyan-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-cyan-500/5"
                     >
-                      <Heart className="w-3 h-3" /> Add All to List
+                      <Heart className="w-3 h-3 animate-pulse" /> Save Filtered Spots to List
                     </button>
                   </div>
                 </>
@@ -290,6 +301,28 @@ function App() {
                           </div>
                           <h3 className="font-bold text-white text-lg">Favorites</h3>
                           <p className="text-xs text-slate-400 mt-1">Your quick-saved spots</p>
+
+                          {/* Inline Export Panel */}
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+                            <select
+                              value={exportFormat}
+                              onChange={(e) => setExportFormat(e.target.value as any)}
+                              className="bg-slate-950 border border-slate-700/60 rounded-md px-1.5 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer w-28"
+                            >
+                              <option value="gpx">GPX (GPS)</option>
+                              <option value="kml">KML (Earth)</option>
+                              <option value="csv">CSV (Excel)</option>
+                            </select>
+                            <button
+                              onClick={() => handleExport('default', 'Favorites')}
+                              disabled={getSavedReefsInList('default', allReefs).length === 0}
+                              className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-30 disabled:hover:scale-100 disabled:cursor-not-allowed text-black text-[10px] font-bold uppercase tracking-wider rounded transition-all hover:scale-105 shadow-md shadow-cyan-500/20"
+                              title="Export Favorites"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>Export</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* User Created Lists */}
@@ -375,25 +408,38 @@ function App() {
                                       <p className="text-[10px] text-slate-500 mt-1">Updated {new Date(list.updatedAt).toLocaleDateString()}</p>
                                     </div>
 
-                                    {/* Quick Actions (Show on hover or always visible for discoverability) */}
+                                    {/* Edit Button */}
                                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                                       <button
                                         onClick={() => setEditingListId(list.id)}
                                         className="p-1.5 text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-all"
-                                        title="Edit"
+                                        title="Rename List"
                                       >
                                         <Edit2 className="w-4 h-4" />
                                       </button>
-                                      <button
-                                        onClick={() => {
-                                          setListsManagerOpen(true);
-                                        }}
-                                        className="flex items-center gap-1.5 px-3 py-1 bg-cyan-500 hover:bg-cyan-400 text-white text-[10px] font-bold uppercase tracking-wide rounded-md shadow-lg shadow-cyan-500/20 transition-all hover:scale-105"
-                                        title="Export List"
-                                      >
-                                        <Download className="w-3 h-3" /> Export
-                                      </button>
                                     </div>
+                                  </div>
+
+                                  {/* Inline Export Panel */}
+                                  <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+                                    <select
+                                      value={exportFormat}
+                                      onChange={(e) => setExportFormat(e.target.value as any)}
+                                      className="bg-slate-950 border border-slate-700/60 rounded-md px-1.5 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer w-28"
+                                    >
+                                      <option value="gpx">GPX (GPS)</option>
+                                      <option value="kml">KML (Earth)</option>
+                                      <option value="csv">CSV (Excel)</option>
+                                    </select>
+                                    <button
+                                      onClick={() => handleExport(list.id, list.name)}
+                                      disabled={count === 0}
+                                      className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-30 disabled:hover:scale-100 disabled:cursor-not-allowed text-black text-[10px] font-bold uppercase tracking-wider rounded transition-all hover:scale-105 shadow-md shadow-cyan-500/20"
+                                      title="Export List"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                      <span>Export</span>
+                                    </button>
                                   </div>
                                 </div>
                               )}
@@ -436,6 +482,37 @@ function App() {
                           <List size={16} />
                         </button>
                       </div>
+
+                      {/* Export Panel */}
+                      {activeListId && (
+                        <div className="mb-4 bg-slate-800/40 border border-slate-700/50 rounded-lg p-2.5 flex items-center justify-between gap-2 animate-fade-in">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Export List</span>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={exportFormat}
+                              onChange={(e) => setExportFormat(e.target.value as any)}
+                              className="bg-slate-950 border border-slate-700/60 rounded-md px-1.5 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer w-28"
+                            >
+                              <option value="gpx">GPX (GPS)</option>
+                              <option value="kml">KML (Earth)</option>
+                              <option value="csv">CSV (Excel)</option>
+                            </select>
+                            <button
+                              onClick={() => {
+                                const currentList = lists.find(l => l.id === activeListId);
+                                if (currentList) {
+                                  handleExport(currentList.id, currentList.name);
+                                }
+                              }}
+                              disabled={getSavedReefsInList(activeListId, allReefs).length === 0}
+                              className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-30 disabled:hover:scale-100 disabled:cursor-not-allowed text-black text-[10px] font-bold uppercase tracking-wider rounded transition-all hover:scale-105 shadow-md shadow-cyan-500/20"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>Export</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Reef Items */}
                       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">

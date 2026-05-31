@@ -47,8 +47,8 @@ export const AddToListsModal: React.FC<AddToListsModalProps> = ({ isOpen, onClos
                 <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <div>
                         <h2 className="text-lg font-bold text-white">Save to List</h2>
-                        <p className="text-xs text-slate-400 truncate max-w-[200px]">
-                            {reefs.length === 1 ? reefs[0].properties.Name : `${reefs.length} Reefs Selected`}
+                        <p className="text-xs text-cyan-400 font-medium mt-0.5 max-w-[280px] truncate">
+                            {reefs.length === 1 ? `Spot: ${reefs[0].properties.Name}` : `Selected: ${reefs.length} spots`}
                         </p>
                     </div>
                     <button
@@ -80,7 +80,14 @@ export const AddToListsModal: React.FC<AddToListsModalProps> = ({ isOpen, onClos
                                     </div>
                                     <span className={`font-medium ${isFullyIncluded ? 'text-white' : 'text-slate-300'}`}>{list.name}</span>
                                 </div>
-                                <span className="text-xs text-slate-500">{list.reefIds.length} spots</span>
+                                <div className="flex items-center gap-2">
+                                    {isFullyIncluded && (
+                                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 animate-pulse shrink-0">
+                                            Saved
+                                        </span>
+                                    )}
+                                    <span className="text-xs text-slate-500">{list.reefIds.length} spots</span>
+                                </div>
                             </div>
                         );
                     })}

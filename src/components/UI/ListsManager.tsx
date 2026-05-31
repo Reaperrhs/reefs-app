@@ -132,27 +132,30 @@ export const ListsManager: React.FC<ListsManagerProps> = ({ isOpen, onClose, all
                                         <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0" onClick={(e) => e.stopPropagation()}>
 
                                             {/* Export Options */}
-                                            <div className="flex items-center bg-black/40 rounded-lg p-1 mr-2">
+                                            <div className="flex items-center bg-black/40 rounded-lg p-1 mr-2 gap-1">
                                                 <button
                                                     onClick={() => setExportFormat('gpx')}
-                                                    className={`p-1.5 rounded transition-colors ${exportFormat === 'gpx' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-500 hover:text-white'}`}
-                                                    title="GPX"
+                                                    className={`px-2 py-1 rounded transition-colors flex items-center gap-1.5 ${exportFormat === 'gpx' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+                                                    title="GPX (GPS)"
                                                 >
-                                                    <MapIcon size={14} />
+                                                    <MapIcon size={13} />
+                                                    <span className="text-[10px] font-bold">GPX</span>
                                                 </button>
                                                 <button
                                                     onClick={() => setExportFormat('kml')}
-                                                    className={`p-1.5 rounded transition-colors ${exportFormat === 'kml' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-500 hover:text-white'}`}
-                                                    title="KML"
+                                                    className={`px-2 py-1 rounded transition-colors flex items-center gap-1.5 ${exportFormat === 'kml' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+                                                    title="KML (Earth)"
                                                 >
-                                                    <Globe size={14} />
+                                                    <Globe size={13} />
+                                                    <span className="text-[10px] font-bold">KML</span>
                                                 </button>
                                                 <button
                                                     onClick={() => setExportFormat('csv')}
-                                                    className={`p-1.5 rounded transition-colors ${exportFormat === 'csv' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-500 hover:text-white'}`}
-                                                    title="CSV"
+                                                    className={`px-2 py-1 rounded transition-colors flex items-center gap-1.5 ${exportFormat === 'csv' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+                                                    title="CSV (Excel)"
                                                 >
-                                                    <FileText size={14} />
+                                                    <FileText size={13} />
+                                                    <span className="text-[10px] font-bold">CSV</span>
                                                 </button>
                                             </div>
 
