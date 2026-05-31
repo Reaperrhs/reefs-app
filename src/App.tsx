@@ -7,16 +7,18 @@ import { SEO } from './components/SEO';
 import { GlassPanel } from './components/UI/GlassPanel';
 import { ListsManager } from './components/UI/ListsManager';
 import { AddToListsModal } from './components/UI/AddToListsModal';
-import { Upload, Search, Filter, Map as MapIcon, Info, Menu, X, Heart, List, ChevronDown, Trash2, Plus, Edit2, Download, Check, Layers } from 'lucide-react';
+import { AuthModal } from './components/UI/AuthModal';
+import { Upload, Search, Filter, Map as MapIcon, Info, Menu, X, Heart, List, ChevronDown, Trash2, Plus, Edit2, Download, Check, Layers, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ReefFeature } from './types/reef';
 import { exportToGPX, exportToKML, exportToCSV, downloadFile } from './utils/files';
 
 function App() {
   const { reefs, allReefs, loading, error, filters, handleFileUpload, totalReefs } = useReefs();
-  const { lists, toggleSaved, getSavedReefsInList, removeReefFromList, deleteList, renameList } = useSavedReefs();
+  const { lists, toggleSaved, getSavedReefsInList, removeReefFromList, deleteList, renameList, user, logout } = useSavedReefs();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isListsManagerOpen, setListsManagerOpen] = useState(false);
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [reefsToManage, setReefsToManage] = useState<ReefFeature[]>([]);
@@ -75,6 +77,7 @@ function App() {
         isOpen={isListsManagerOpen}
         onClose={() => setListsManagerOpen(false)}
         allReefs={allReefs}
+        onOpenAuth={() => setAuthModalOpen(true)}
       />
 
       {/* Add To List Modal */}
@@ -82,6 +85,12 @@ function App() {
         isOpen={reefsToManage.length > 0}
         onClose={() => setReefsToManage([])}
         reefs={reefsToManage}
+      />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setAuthModalOpen(false)}
       />
 
       {/* Header Overlay */}
@@ -98,6 +107,35 @@ function App() {
           </GlassPanel>
 
           <div className="flex gap-2 pointer-events-auto shrink-0">
+            {/* User Session Actions */}
+            <GlassPanel 
+              className="p-2 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors gap-2 text-slate-300 hover:text-white"
+              onClick={() => {
+                if (user) {
+                  if (confirm('Sign out of your account?')) {
+                    logout();
+                  }
+                } else {
+                  setAuthModalOpen(true);
+                }
+              }}
+            >
+              {user ? (
+                <>
+                  <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center text-[10px] font-bold text-cyan-400 shrink-0">
+                    {user.email[0].toUpperCase()}
+                  </div>
+                  <span className="text-xs font-bold hidden sm:inline max-w-[100px] truncate">{user.email}</span>
+                  <LogOut className="w-3.5 h-3.5 text-slate-500" />
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs font-bold hidden sm:inline">Log In / Sign Up</span>
+                </>
+              )}
+            </GlassPanel>
+
             <GlassPanel className="p-2 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors md:hidden" onClick={() => setSidebarOpen(!isSidebarOpen)}>
               {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </GlassPanel>
@@ -277,6 +315,22 @@ function App() {
                   {!activeListId ? (
                     /* MASTER VIEW: All Collections */
                     <div className="flex flex-col gap-4 animate-fade-in">
+                      {/* Guest Session Banner */}
+                      {!user && (
+                        <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3 flex items-start gap-2.5">
+                          <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <h4 className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Guest Session</h4>
+                            <p className="text-[10px] text-slate-400 leading-normal mt-0.5">
+                              Favorites and lists will clear on page reload. 
+                              <button onClick={() => setAuthModalOpen(true)} className="text-cyan-400 font-bold hover:underline cursor-pointer">
+                                Create account
+                              </button> to save permanently.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Your Collections</span>
                         <button

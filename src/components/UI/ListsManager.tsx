@@ -8,10 +8,11 @@ interface ListsManagerProps {
     isOpen: boolean;
     onClose: () => void;
     allReefs: ReefFeature[];
+    onOpenAuth?: () => void;
 }
 
-export const ListsManager: React.FC<ListsManagerProps> = ({ isOpen, onClose, allReefs }) => {
-    const { lists, createList, deleteList, renameList, getSavedReefsInList, removeReefFromList } = useSavedReefs();
+export const ListsManager: React.FC<ListsManagerProps> = ({ isOpen, onClose, allReefs, onOpenAuth }) => {
+    const { lists, createList, deleteList, renameList, getSavedReefsInList, removeReefFromList, user } = useSavedReefs();
     const [newListName, setNewListName] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
@@ -64,6 +65,25 @@ export const ListsManager: React.FC<ListsManagerProps> = ({ isOpen, onClose, all
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+                    {/* Guest Call To Action */}
+                    {!user && (
+                        <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4 shadow-inner shadow-amber-500/5">
+                            <div className="flex-1 text-center sm:text-left">
+                                <h3 className="text-amber-400 font-bold tracking-wide">Save Your Lists Permanently</h3>
+                                <p className="text-slate-400 text-sm mt-1">Right now, your lists are temporary and will be lost if you close the browser. Create an account to save them!</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    onClose();
+                                    onOpenAuth?.();
+                                }}
+                                className="shrink-0 bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2.5 rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-105"
+                            >
+                                Create Account
+                            </button>
+                        </div>
+                    )}
 
                     {/* Create New List */}
                     <form onSubmit={handleCreate} className="flex gap-2">

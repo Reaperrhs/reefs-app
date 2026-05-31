@@ -16,35 +16,67 @@ interface SavedReefsContextType {
     isSaved: (reefId: number) => boolean;
     getSavedReefsInList: (listId: string, allReefs: ReefFeature[]) => ReefFeature[];
     addReefsToList: (listId: string, reefIds: number[]) => void;
+    // Auth additions
+    user: { email: string } | null;
+    login: (email: string) => void;
+    register: (email: string) => void;
+    logout: () => void;
 }
 
 const SavedReefsContext = createContext<SavedReefsContextType | undefined>(undefined);
 
 export function SavedReefsProvider({ children }: { children: ReactNode }) {
-    const [lists, setLists] = useState<ReefList[]>(() => {
-        // Load lists
-        const savedListsJson = localStorage.getItem(STORAGE_KEY_LISTS);
-        if (savedListsJson) {
-            return JSON.parse(savedListsJson);
+    const [user, setUser] = useState<{ email: string } | null>(() => {
+        const savedUser = localStorage.getItem('reefUser');
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
+
+    const getStorageKey = (currentUser: typeof user) => {
+        return currentUser ? `reefLists_user_${currentUser.email}` : 'reefLists_guest';
+    };
+
+    const loadLists = (currentUser: typeof user) => {
+        const key = getStorageKey(currentUser);
+        const storage = currentUser ? localStorage : sessionStorage;
+        const saved = storage.getItem(key);
+        if (saved) {
+            return JSON.parse(saved);
         }
 
-        // Migration: Check for legacy saved reefs
-        const legacySaved = localStorage.getItem(STORAGE_KEY_LEGACY);
-        if (legacySaved) {
-            try {
-                const ids = JSON.parse(legacySaved);
-                if (Array.isArray(ids)) {
-                    const defaultList: ReefList = {
-                        id: 'default',
-                        name: 'Favorites',
-                        reefIds: ids,
-                        createdAt: Date.now(),
-                        updatedAt: Date.now()
-                    };
-                    return [defaultList];
+        // Migration: If registering/logging in, check if guest had lists in sessionStorage
+        if (currentUser) {
+            const guestSaved = sessionStorage.getItem('reefLists_guest');
+            if (guestSaved) {
+                try {
+                    const guestLists = JSON.parse(guestSaved);
+                    if (Array.isArray(guestLists) && guestLists.some(l => l.reefIds.length > 0)) {
+                        storage.setItem(key, guestSaved);
+                        sessionStorage.removeItem('reefLists_guest');
+                        return guestLists;
+                    }
+                } catch (e) {
+                    console.error('Guest migration error', e);
                 }
-            } catch (e) {
-                console.error('Migration failed', e);
+            }
+
+            // Fallback: Check global legacy list
+            const legacySaved = localStorage.getItem(STORAGE_KEY_LEGACY);
+            if (legacySaved) {
+                try {
+                    const ids = JSON.parse(legacySaved);
+                    if (Array.isArray(ids)) {
+                        const defaultList: ReefList = {
+                            id: 'default',
+                            name: 'Favorites',
+                            reefIds: ids,
+                            createdAt: Date.now(),
+                            updatedAt: Date.now()
+                        };
+                        return [defaultList];
+                    }
+                } catch (e) {
+                    console.error('Legacy migration failed', e);
+                }
             }
         }
 
@@ -56,11 +88,39 @@ export function SavedReefsProvider({ children }: { children: ReactNode }) {
             createdAt: Date.now(),
             updatedAt: Date.now()
         }];
-    });
+    };
 
+    const [lists, setLists] = useState<ReefList[]>(() => loadLists(user));
+
+    // When user state changes, reload corresponding lists
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_LISTS, JSON.stringify(lists));
-    }, [lists]);
+        setLists(loadLists(user));
+    }, [user]);
+
+    // Save lists to corresponding storage when lists or user change
+    useEffect(() => {
+        const key = getStorageKey(user);
+        const storage = user ? localStorage : sessionStorage;
+        storage.setItem(key, JSON.stringify(lists));
+    }, [lists, user]);
+
+    // Auth functions
+    const login = (email: string) => {
+        const newUser = { email };
+        localStorage.setItem('reefUser', JSON.stringify(newUser));
+        setUser(newUser);
+    };
+
+    const register = (email: string) => {
+        const newUser = { email };
+        localStorage.setItem('reefUser', JSON.stringify(newUser));
+        setUser(newUser);
+    };
+
+    const logout = () => {
+        localStorage.removeItem('reefUser');
+        setUser(null);
+    };
 
     // List Management
     const createList = (name: string, initialReefIds: number[] = []) => {
@@ -106,7 +166,6 @@ export function SavedReefsProvider({ children }: { children: ReactNode }) {
 
     // Legacy/Compatibility helpers
     const toggleSaved = (reefId: number) => {
-        // Toggles in 'default' list for backward compatibility with Heart icon
         const defaultList = lists.find(l => l.id === 'default');
         if (defaultList?.reefIds.includes(reefId)) {
             removeReefFromList('default', reefId);
@@ -116,7 +175,6 @@ export function SavedReefsProvider({ children }: { children: ReactNode }) {
     };
 
     const isSaved = (reefId: number) => {
-        // Checks if it's in the default list (for Map Heart Icon)
         return lists.find(l => l.id === 'default')?.reefIds.includes(reefId) || false;
     };
 
@@ -148,7 +206,11 @@ export function SavedReefsProvider({ children }: { children: ReactNode }) {
                 }
                 return l;
             }));
-        }
+        },
+        user,
+        login,
+        register,
+        logout
     };
 
     return (
